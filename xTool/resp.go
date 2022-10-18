@@ -1,6 +1,7 @@
 package xTool
 
 import (
+	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/net/ghttp"
 )
 
@@ -10,7 +11,7 @@ func CreateFastResponse(r *ghttp.Request, args ...any) *FastResponse {
 	ifMode := true
 
 	if len(args) > 0 {
-		ifMode = args[0].(bool)
+		ifMode = gvar.New(args[0], true).Bool()
 	}
 
 	return &FastResponse{
@@ -83,7 +84,7 @@ func (t *FastResponse) Response(args ...any) {
 	resp := make(map[string]any, 1)
 
 	if len(args) >= 1 {
-		t.Msg = args[0].(string)
+		t.Msg = gvar.New(args[0], true).String()
 	}
 
 	if len(args) >= 2 {
@@ -91,7 +92,7 @@ func (t *FastResponse) Response(args ...any) {
 	}
 
 	if len(args) >= 3 {
-		t.Status = args[2].(int)
+		t.Status = gvar.New(args[2], true).Int()
 	}
 
 	resp["code"] = t.Status
