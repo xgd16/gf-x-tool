@@ -80,6 +80,10 @@ func (t *FastResponse) Callback(fn func(t *FastResponse)) *FastResponse {
 	return t
 }
 
+// Response 执行返回操作
+// Msg 参数 1 要返回的文本参数
+// Data 参数 2 要返回的数据
+// Status 要返回的 code 码
 func (t *FastResponse) Response(args ...any) {
 	resp := make(map[string]any, 1)
 
