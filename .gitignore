@@ -1,0 +1,5 @@
+/.idea
+/.vscode
+/test/config.toml
+/test/XDB/
+/test/log/
