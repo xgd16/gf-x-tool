@@ -1,4 +1,4 @@
-package translate
+package xtranslate
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"github.com/gogf/gf/v2/os/gctx"
 	"github.com/gogf/gf/v2/os/gtime"
 	"github.com/gogf/gf/v2/text/gstr"
-	"github.com/xgd16/gf-x-tool/xTool"
+	"github.com/xgd16/gf-x-tool/xlib"
 	"math"
 	"time"
 )
@@ -43,7 +43,7 @@ func YouDaoTranslate(YouDaoConfig *YouDaoConfigType, from, to, text string) ([]s
 	salt := gtime.Now().UnixMilli()
 	curTime := int(math.Round(float64(salt / 1000)))
 	signStr := fmt.Sprintf("%s%s%d%d%s", YouDaoConfig.AppKey, truncate(text), salt, curTime, YouDaoConfig.SecKey)
-	sign := xTool.Sha256(signStr)
+	sign := xlib.Sha256(signStr)
 
 	post, err := g.Client().SetTimeout(time.Duration(YouDaoConfig.CurlTimeOut)*time.Millisecond).Post(gctx.New(), YouDaoConfig.Url, g.Map{
 		"q":        text,

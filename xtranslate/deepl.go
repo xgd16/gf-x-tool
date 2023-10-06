@@ -1,4 +1,4 @@
-package translate
+package xtranslate
 
 import (
 	"errors"
@@ -6,23 +6,17 @@ import (
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"net/url"
 	"time"
 )
 
-// GoogleTranslate google 翻译
-func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []string, fromLang string, err error) {
+func DeeplTranslate(config *DeeplConfigType, from, to, text string) (result []string, fromLang string, err error) {
 	if config == nil || config.Url == "" || config.Key == "" {
-		return nil, "", errors.New("google翻译配置异常")
+		return nil, "", errors.New("deepl翻译配置异常")
 	}
 	ctx := gctx.New()
 	// 语言标记转换
-	from, err = SafeLangType(from, Google)
-	to, err = SafeLangType(to, Google)
-	// google auto = ""
-	if from == "auto" {
-		from = ""
-	}
+	from, err = SafeLangType(from, Deepl)
+	to, err = SafeLangType(to, Deepl)
 	// 处理转换为安全语言类型错误
 	if err != nil {
 		return
@@ -32,17 +26,20 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 		err = errors.New("转换后语言不能为auto")
 		return
 	}
+	if from == "auto" {
+		from = ""
+	}
 	// 调用翻译
-	HttpResult, err := g.Client().
-		SetTimeout(time.Duration(config.CurlTimeOut)*time.Millisecond).
-		Get(ctx, fmt.Sprintf(
-			"%s?key=%s&q=%s&source=%s&target=%s",
-			config.Url,
-			config.Key,
-			url.QueryEscape(text),
-			from,
-			to,
-		))
+	HttpResult, err := g.Client().SetTimeout(time.Duration(config.CurlTimeOut)*time.Millisecond).Header(g.MapStrStr{
+		"Authorization": fmt.Sprintf("DeepL-Auth-Key %s", config.Key),
+	}).Post(ctx, fmt.Sprintf(
+		"%s",
+		config.Url,
+	), g.Map{
+		"text":        text,
+		"source_lang": from,
+		"target_lang": to,
+	})
 	// 处理调用接口错误
 	if err != nil {
 		return
@@ -51,7 +48,7 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 	defer func() { _ = HttpResult.Close() }()
 	// 判断状态码
 	if HttpResult.StatusCode != 200 {
-		err = errors.New("请求失败  " + HttpResult.ReadAllString())
+		err = errors.New("请求失败")
 		return
 	}
 	// 返回的json解析
@@ -62,14 +59,14 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 		return
 	}
 	// 获取源语言
-	dsl := json.Get("data.translations.0.detectedSourceLanguage")
+	dsl := json.Get("translations.0.detected_source_language")
 	if dsl.IsEmpty() {
 		fromLang = from
 	} else {
 		fromLang = dsl.String()
 	}
 	// 返回翻译结果
-	tr := json.Get("data.translations.0.translatedText")
+	tr := json.Get("translations.0.text")
 	if tr.IsEmpty() {
 		err = errors.New("翻译失败请重试 " + respStr)
 		return
@@ -77,7 +74,6 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 		result = tr.Strings()
 	}
 	// 将语言种类转换为有道标准
-	fromLang, err = GetYouDaoLang(fromLang, Google)
-
+	fromLang, err = GetYouDaoLang(fromLang, Deepl)
 	return
 }

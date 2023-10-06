@@ -1,10 +1,9 @@
-package xTool
+package xlib
 
 import (
-	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"github.com/gogf/gf/v2/container/gvar"
+	"github.com/gogf/gf/v2/container/garray"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -23,69 +22,12 @@ func Sha256(text string) string {
 }
 
 // InArr 是否在数组中
-func InArr[T string | int | int8 | int16 | int32 | int64 | float32 | float64](a T, arr []T) bool {
-	for _, v := range arr {
-		if a == v {
-			return true
-		}
+func InArr[T any](a T, arr []T) bool {
+	anyArr := make([]any, 0)
+	for _, t := range arr {
+		anyArr = append(anyArr, t)
 	}
-	return false
-}
-
-// ArrToType 数组转换为指定类型的 type (支持的类型多但不安全)
-func ArrToType[T any](d []gdb.Value) []T {
-	var data []T
-	var refV any = *new(T)
-
-	for _, v := range d {
-		d := v.Val()
-
-		switch refV.(type) {
-		case string:
-			data = append(data, any(v.String()).(T))
-			break
-		case int:
-			data = append(data, any(v.Int()).(T))
-			break
-		case int8:
-			data = append(data, any(v.Int8()).(T))
-			break
-		case int16:
-			data = append(data, any(v.Int16()).(T))
-			break
-		case int32:
-			data = append(data, any(v.Int32()).(T))
-			break
-		case int64:
-			data = append(data, any(v.Int64()).(T))
-			break
-		case float32:
-			data = append(data, any(v.Float32()).(T))
-			break
-		case float64:
-			data = append(data, any(v.Float64()).(T))
-			break
-		default:
-			data = append(data, d.(T))
-			break
-		}
-	}
-
-	return data
-}
-
-// SetCtxVar 向 ctx 中设置数据
-func SetCtxVar(ctx context.Context, key, value any) context.Context {
-	return context.WithValue(ctx, key, value)
-}
-
-// GetCtxVar 从 ctx 中获取数据
-func GetCtxVar(ctx context.Context, key any, def ...any) *gvar.Var {
-	value := ctx.Value(key)
-	if value == nil && len(def) > 0 {
-		value = def[0]
-	}
-	return gvar.New(value)
+	return garray.NewArrayFrom(anyArr).Contains(a)
 }
 
 // Maintain 维持函数

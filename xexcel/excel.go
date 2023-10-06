@@ -1,4 +1,4 @@
-package xExcel
+package xexcel
 
 import (
 	"errors"

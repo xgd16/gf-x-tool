@@ -1,6 +1,6 @@
 //go:build windows
 
-package xTool
+package xlib
 
 import "fmt"
 

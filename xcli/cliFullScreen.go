@@ -1,4 +1,4 @@
-package xTool
+package xcli
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 //func main() {
-//	RunFullScreenUpdate(func(updater *FullScreenUpdater) error {
+//	RunFullScreenUpdate(func(updater *TerminalPrint) error {
 //		// 在这里编写你的逻辑，根据需要更新屏幕内容
 //		// 调用 updater.Stop() 来结束全屏内容更新
 //		// 调用 updater.DrawText() 来绘制文本
@@ -36,8 +36,8 @@ type bufferType struct {
 	Text string
 }
 
-// FullScreenUpdater 定义全屏更新器
-type FullScreenUpdater struct {
+// TerminalPrint 定义全屏更新器
+type TerminalPrint struct {
 	stopFlag   bool         // 停止标志
 	buffer     []bufferType // 更新缓冲区
 	display    []bufferType // 显示缓冲区
@@ -45,12 +45,12 @@ type FullScreenUpdater struct {
 }
 
 // Stop 停止全屏更新
-func (u *FullScreenUpdater) Stop() {
+func (u *TerminalPrint) Stop() {
 	u.stopFlag = true
 }
 
 // DrawText 在屏幕上绘制文本
-func (u *FullScreenUpdater) DrawText(x, y int, text string) {
+func (u *TerminalPrint) DrawText(x, y int, text string) {
 	u.bufferLock.Lock()
 	defer u.bufferLock.Unlock()
 
@@ -67,34 +67,32 @@ func (u *FullScreenUpdater) DrawText(x, y int, text string) {
 	}
 }
 
-// RunFullScreenUpdate 开启全屏内容更新
+// TerminalPrintView 终端输出显示
 // callback 是回调函数，用于控制每一帧的显示内容
 // 结束时，通过调用 callback 参数的 Stop() 方法来退出全屏更新
-func RunFullScreenUpdate(callback func(updater *FullScreenUpdater) error) {
-	err := termbox.Init()
-	if err != nil {
-		panic(err) // 初始化错误，使用 panic 中止程序
+func TerminalPrintView(callback func(updater *TerminalPrint) error) (err error) {
+	// 初始化数据
+	if err = termbox.Init(); err != nil {
+		return
 	}
 	defer termbox.Close()
-
-	updater := &FullScreenUpdater{} // 创建全屏更新器实例
+	// 创建全屏更新器实例
+	updater := &TerminalPrint{}
 
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				err := fmt.Errorf("发生错误：%v", r)
-				termbox.Close() // 关闭 termbox
-				panic(err)      // 重新抛出错误
+				err = fmt.Errorf("发生错误：%v", r)
+				termbox.Close() // 关闭 term box
 			}
 		}()
-		err := callback(updater)
-		if err != nil {
-			panic(err) // 使用 panic 中止程序
-		}
+		err = callback(updater)
 	}()
 
 	for !updater.stopFlag {
-		termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
+		if err = termbox.Clear(termbox.ColorDefault, termbox.ColorDefault); err != nil {
+			return
+		}
 
 		updater.bufferLock.Lock()
 		updater.display = make([]bufferType, len(updater.buffer))
@@ -105,14 +103,19 @@ func RunFullScreenUpdate(callback func(updater *FullScreenUpdater) error) {
 			updater.drawText(item.X, item.Y, item.Text) // 修改这一行
 		}
 
-		termbox.Flush()
+		if err = termbox.Flush(); err != nil {
+			return
+		}
 		time.Sleep(16 * time.Millisecond)
 	}
-
-	termbox.Sync() // 刷新终端内容
+	// 刷新终端内容
+	if err = termbox.Sync(); err != nil {
+		return
+	}
+	return
 }
 
-func (u *FullScreenUpdater) drawText(x, y int, text string) {
+func (u *TerminalPrint) drawText(x, y int, text string) {
 	for i, c := range text {
 		termbox.SetCell(x+i, y, c, termbox.ColorDefault, termbox.ColorDefault)
 	}
