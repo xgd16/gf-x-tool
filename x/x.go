@@ -9,8 +9,8 @@ import (
 )
 
 // Resp HTTP 快速定义返回结果
-func Resp(r *ghttp.Request, args ...any) {
-	xhttp.CreateFastResponse(r, args...)
+func Resp(r *ghttp.Request, args ...any) *xhttp.FastResponse {
+	return xhttp.CreateFastResponse(r, args...)
 }
 
 // XDB 创建简易文件存储
