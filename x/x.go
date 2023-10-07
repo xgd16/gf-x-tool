@@ -8,8 +8,8 @@ import (
 	"github.com/xgd16/gf-x-tool/xstorage"
 )
 
-// Resp HTTP 快速定义返回结果
-func Resp(r *ghttp.Request, args ...any) *xhttp.FastResponse {
+// FastResp HTTP 快速定义返回结果
+func FastResp(r *ghttp.Request, args ...any) *xhttp.FastResponse {
 	return xhttp.CreateFastResponse(r, args...)
 }
 
