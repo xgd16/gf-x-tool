@@ -1,4 +1,4 @@
-package xTool
+package xgraylog
 
 import (
 	"bytes"
