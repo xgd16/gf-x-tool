@@ -8,7 +8,7 @@ import (
 )
 
 type VerifyHandlerInterface interface {
-	Rules() map[string]string
+	Rules(r *ghttp.Request) map[string]string
 	Message() map[string]string
 }
 
@@ -48,7 +48,7 @@ func VerifyHandler(r *ghttp.Request, i VerifyHandlerInterface) {
 	// 获取数据
 	data := r.GetMap()
 	// 调用处理验证
-	err := g.Validator().Rules(i.Rules()).Messages(message).Data(data).Run(r.GetCtx())
+	err := g.Validator().Rules(i.Rules(r)).Messages(message).Data(data).Run(r.GetCtx())
 	if err != nil {
 		if msgNil {
 			VerifyDefaultMsgNilResp(r)
