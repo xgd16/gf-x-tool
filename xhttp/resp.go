@@ -126,6 +126,10 @@ type FastResponse struct {
 	respMap    map[string]any
 }
 
+func (t *FastResponse) GetRequest() *ghttp.Request {
+	return t.r
+}
+
 // SetStatus 设置状态
 func (t *FastResponse) SetStatus(status int) *FastResponse {
 	if !t.IfMode {
