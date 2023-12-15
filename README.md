@@ -1,5 +1,4 @@
 # 用于 [GF](https://goframe.org/pages/viewpage.action?pageId=1114119) 的工具集
-<font size="2" color=#006666>西安豆芽科技有限公司 **制**</font>
 ## Go mod 拉取
 
 ```shell
