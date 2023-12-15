@@ -2,6 +2,7 @@ package xtranslate
 
 import (
 	"errors"
+	"fmt"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -15,7 +16,7 @@ var TranslateDebug = func() bool {
 	get, err := g.Cfg().Get(gctx.New(), "server.translateDebug", false)
 
 	if err != nil {
-		panic([]any{"翻译初始化失败", err})
+		panic(fmt.Sprintf("翻译初始化失败 %s", err))
 	}
 
 	return get.Bool()
