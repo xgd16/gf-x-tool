@@ -36,7 +36,7 @@ func SetGrayLogConfig(host string, port int) {
 }
 
 // SwitchToGraylog 转换到 Graylog 日志
-func SwitchToGraylog(name string) glog.Handler {
+func SwitchToGraylog(name string, optFunc func(ctx context.Context, m g.Map)) glog.Handler {
 	return func(ctx context.Context, in *glog.HandlerInput) {
 		// 如果没有配置那么按照正常配置写入
 		if GrayLogConfig == nil {
@@ -56,6 +56,13 @@ func SwitchToGraylog(name string) glog.Handler {
 			short = p[:i]
 			full = p
 		}
+		extra := g.Map{ // custom logger param
+			"levelFormat": in.LevelFormat,
+			"stack":       in.Stack,
+			"traceId":     in.TraceId,
+			"device":      hook.Host,
+		}
+		optFunc(ctx, extra)
 		// writer logger
 		err := hook.Writer().WriteMessage(&graylog.Message{
 			Version:  "1.1",
@@ -66,12 +73,7 @@ func SwitchToGraylog(name string) glog.Handler {
 			Level:    int32(in.Level),
 			File:     file,
 			Line:     line,
-			Extra: g.Map{ // custom logger param
-				"levelFormat": in.LevelFormat,
-				"stack":       in.Stack,
-				"traceId":     in.TraceId,
-				"device":      hook.Host,
-			},
+			Extra:    extra,
 		})
 		if err != nil {
 			fmt.Printf("[记录日志出错] %s \n", err.Error())
