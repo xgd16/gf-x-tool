@@ -3,9 +3,10 @@ package xexcel
 import (
 	"errors"
 	"fmt"
+	"math"
+
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/xuri/excelize/v2"
-	"math"
 )
 
 type Excel struct {
@@ -30,6 +31,11 @@ func CreateExcel(data ...[]map[string]any) *Excel {
 		excelFile: excelize.NewFile(),
 		data:      data,
 	}
+}
+
+func (t *Excel) Options(optionFunc func(excel *excelize.File)) *Excel {
+	optionFunc(t.excelFile)
+	return t
 }
 
 // ReName 修改标题名称
