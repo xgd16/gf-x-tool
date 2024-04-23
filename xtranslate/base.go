@@ -3,6 +3,7 @@ package xtranslate
 import (
 	"errors"
 	"fmt"
+
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
@@ -226,7 +227,6 @@ func Translation(t *TranslationResData, cfg ...map[string][]map[string]*gvar.Var
 					AppId:       cfg["appId"].String(),
 					Key:         cfg["key"].String(),
 				}, t.From, t.To, t.Text)
-				break
 			case YouDao:
 				translate, from, err = YouDaoTranslate(&YouDaoConfigType{
 					CurlTimeOut: cfg["curlTimeOut"].Int(),
@@ -234,21 +234,18 @@ func Translation(t *TranslationResData, cfg ...map[string][]map[string]*gvar.Var
 					AppKey:      cfg["appKey"].String(),
 					SecKey:      cfg["secKey"].String(),
 				}, t.From, t.To, t.Text)
-				break
 			case Google:
 				translate, from, err = GoogleTranslate(&GoogleConfigType{
 					CurlTimeOut: cfg["curlTimeOut"].Int(),
 					Url:         cfg["url"].String(),
 					Key:         cfg["key"].String(),
 				}, t.From, t.To, t.Text)
-				break
 			case Deepl:
 				translate, from, err = DeeplTranslate(&DeeplConfigType{
 					CurlTimeOut: cfg["curlTimeOut"].Int(),
 					Url:         cfg["url"].String(),
 					Key:         cfg["key"].String(),
 				}, t.From, t.To, t.Text)
-				break
 			}
 			// 处理翻译失败 翻译失败时跳过本次自动执行下次翻译
 			if err != nil {

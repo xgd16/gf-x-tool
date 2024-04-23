@@ -3,34 +3,33 @@ package xtranslate
 import (
 	"errors"
 	"fmt"
+	"net/url"
+	"time"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"net/url"
-	"time"
 )
 
 // GoogleTranslate google 翻译
 func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []string, fromLang string, err error) {
 	if config == nil || config.Url == "" || config.Key == "" {
-		return nil, "", errors.New("google翻译配置异常")
+		err = errors.New("google翻译配置异常")
+		return
 	}
 	ctx := gctx.New()
 	// 语言标记转换
 	from, err = SafeLangType(from, Google)
-	to, err = SafeLangType(to, Google)
-	// google auto = ""
-	if from == "auto" {
-		from = ""
-	}
-	// 处理转换为安全语言类型错误
 	if err != nil {
 		return
 	}
-	// 处理转换后语言设置为auto
-	if to == "auto" {
-		err = errors.New("转换后语言不能为auto")
+	to, err = SafeLangType(to, Google)
+	if err != nil {
 		return
+	}
+	// google auto = ""
+	if from == "auto" {
+		from = ""
 	}
 	// 调用翻译
 	HttpResult, err := g.Client().
@@ -50,14 +49,13 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 	// 推出函数时关闭链接
 	defer func() { _ = HttpResult.Close() }()
 	// 判断状态码
+	respStr := HttpResult.ReadAllString()
 	if HttpResult.StatusCode != 200 {
-		err = errors.New("请求失败  " + HttpResult.ReadAllString())
+		err = fmt.Errorf("请求失败 状态码: %d 返回结果: %s", HttpResult.StatusCode, respStr)
 		return
 	}
 	// 返回的json解析
-	respStr := HttpResult.ReadAllString()
 	json, err := gjson.DecodeToJson(respStr)
-	// 处理json错误
 	if err != nil {
 		return
 	}
@@ -78,6 +76,5 @@ func GoogleTranslate(config *GoogleConfigType, from, to, text string) (result []
 	}
 	// 将语言种类转换为有道标准
 	fromLang, err = GetYouDaoLang(fromLang, Google)
-
 	return
 }

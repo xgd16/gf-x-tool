@@ -3,27 +3,26 @@ package xtranslate
 import (
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/gctx"
-	"time"
 )
 
 func DeeplTranslate(config *DeeplConfigType, from, to, text string) (result []string, fromLang string, err error) {
 	if config == nil || config.Url == "" || config.Key == "" {
-		return nil, "", errors.New("deepl翻译配置异常")
+		err = errors.New("deepl翻译配置异常")
+		return
 	}
 	ctx := gctx.New()
 	// 语言标记转换
 	from, err = SafeLangType(from, Deepl)
-	to, err = SafeLangType(to, Deepl)
-	// 处理转换为安全语言类型错误
 	if err != nil {
 		return
 	}
-	// 处理转换后语言设置为auto
-	if to == "auto" {
-		err = errors.New("转换后语言不能为auto")
+	to, err = SafeLangType(to, Deepl)
+	if err != nil {
 		return
 	}
 	if from == "auto" {
@@ -32,10 +31,7 @@ func DeeplTranslate(config *DeeplConfigType, from, to, text string) (result []st
 	// 调用翻译
 	HttpResult, err := g.Client().SetTimeout(time.Duration(config.CurlTimeOut)*time.Millisecond).Header(g.MapStrStr{
 		"Authorization": fmt.Sprintf("DeepL-Auth-Key %s", config.Key),
-	}).Post(ctx, fmt.Sprintf(
-		"%s",
-		config.Url,
-	), g.Map{
+	}).Post(ctx, config.Url, g.Map{
 		"text":        text,
 		"source_lang": from,
 		"target_lang": to,
@@ -47,14 +43,13 @@ func DeeplTranslate(config *DeeplConfigType, from, to, text string) (result []st
 	// 推出函数时关闭链接
 	defer func() { _ = HttpResult.Close() }()
 	// 判断状态码
+	respStr := HttpResult.ReadAllString()
 	if HttpResult.StatusCode != 200 {
-		err = errors.New("请求失败")
+		err = fmt.Errorf("请求失败 状态码: %d 返回结果: %s", HttpResult.StatusCode, respStr)
 		return
 	}
 	// 返回的json解析
-	respStr := HttpResult.ReadAllString()
 	json, err := gjson.DecodeToJson(respStr)
-	// 处理json错误
 	if err != nil {
 		return
 	}
