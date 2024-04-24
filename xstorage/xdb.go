@@ -29,6 +29,7 @@ type XDB struct {
 }
 
 func (x *XDB) Init() *XDB {
+	x.mutex = new(sync.Mutex)
 	x.mutex.Lock()
 	defer x.mutex.Unlock()
 
@@ -44,8 +45,6 @@ func (x *XDB) Init() *XDB {
 
 	x.cache = m
 	x.cacheJson = json
-	x.mutex = new(sync.Mutex)
-
 	return x
 }
 
