@@ -2,12 +2,13 @@ package xstorage
 
 import (
 	"fmt"
+	"sync"
+	"sync/atomic"
+
 	"github.com/gogf/gf/v2/container/garray"
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/os/gfile"
-	"sync"
-	"sync/atomic"
 )
 
 // CreateXDB 创建数据库对象
@@ -15,7 +16,7 @@ func CreateXDB() *XDB {
 	return (&XDB{
 		DBPath: "./XDB",
 		DBFile: "xdb.json",
-	}).init()
+	}).Init()
 }
 
 type XDB struct {
@@ -27,7 +28,9 @@ type XDB struct {
 	mutex     *sync.Mutex
 }
 
-func (x *XDB) init() *XDB {
+func (x *XDB) Init() *XDB {
+	x.mutex.Lock()
+	defer x.mutex.Unlock()
 
 	content := gfile.GetContents(x.getDbFilePath())
 
