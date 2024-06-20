@@ -2,6 +2,7 @@ package xhttp
 
 import (
 	"fmt"
+
 	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/frame/g"
@@ -12,7 +13,7 @@ import (
 )
 
 // GetMessageToStatus 根据状态获取 Message
-var GetMessageToStatus func(status int) string = nil
+var GetMessageToStatus func(r *ghttp.Request, status int) string = nil
 
 // RespAdvancedOption 高级配置
 var RespAdvancedOption func(t *FastResponse, m *map[string]any) = nil
@@ -214,10 +215,8 @@ func (t *FastResponse) respHandler() {
 	switch t.respMode {
 	case JsonRespMode:
 		t.r.Response.WriteJsonExit(t.respMap)
-		break
 	case MsgRespMode:
 		t.r.Response.WriteExit(t.Msg)
-		break
 	}
 }
 
@@ -247,7 +246,7 @@ func (t *FastResponse) Response(args ...any) {
 	}
 	// 将状态数据转换为 对应的消息
 	if GetMessageToStatus != nil && t.Status != FastResponseOption.DefaultSuccessCode && t.Status != FastResponseOption.DefaultErrorCode {
-		t.Msg = GetMessageToStatus(t.Status)
+		t.Msg = GetMessageToStatus(t.r, t.Status)
 	}
 	// 调用高级配置
 	if RespAdvancedOption != nil {
