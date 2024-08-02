@@ -4,14 +4,16 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"runtime"
+	"strings"
+	"time"
+
 	graylog "github.com/gemnasium/logrus-graylog-hook/v3"
+	"github.com/gogf/gf/v2/container/gvar"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/os/glog"
 	"github.com/gogf/gf/v2/text/gstr"
 	"github.com/gogf/gf/v2/util/gconv"
-	"runtime"
-	"strings"
-	"time"
 )
 
 type GrayLogConfigType struct {
@@ -19,7 +21,9 @@ type GrayLogConfigType struct {
 	Port int
 }
 
-var GrayLogConfig *GrayLogConfigType = nil
+var GrayLogConfig map[string]*GrayLogConfigType = nil
+var GrayLogConfigArr []*GrayLogConfigType = nil
+var nextKey = 0
 
 type JsonOutputsForLogger struct {
 	Time    string `json:"time"`
@@ -28,11 +32,45 @@ type JsonOutputsForLogger struct {
 }
 
 // SetGrayLogConfig 配置 GrayLog 基础信息
-func SetGrayLogConfig(host string, port int) {
-	GrayLogConfig = &GrayLogConfigType{
-		Host: host,
-		Port: port,
+func SetGrayLogConfig(config *gvar.Var) {
+	GrayLogConfig = make(map[string]*GrayLogConfigType)
+	mapConfig := config.MapStrVar()
+	if !mapConfig["host"].IsEmpty() && !mapConfig["port"].IsEmpty() {
+		newConfig := &GrayLogConfigType{
+			Host: mapConfig["host"].String(),
+			Port: mapConfig["port"].Int(),
+		}
+		GrayLogConfig["default"] = newConfig
+		GrayLogConfigArr = append(GrayLogConfigArr, newConfig)
+		return
 	}
+	for k, v := range mapConfig {
+		item := v.MapStrVar()
+		newConfig := &GrayLogConfigType{
+			Host: item["host"].String(),
+			Port: item["port"].Int(),
+		}
+		GrayLogConfig[k] = newConfig
+		GrayLogConfigArr = append(GrayLogConfigArr, newConfig)
+	}
+}
+
+func GetConfig() (conf *GrayLogConfigType, err error) {
+	if len(GrayLogConfig) == 0 || GrayLogConfig == nil {
+		err = fmt.Errorf("GrayLogConfig is nil")
+		return
+	}
+	if len(GrayLogConfigArr) == 1 {
+		conf = GrayLogConfigArr[0]
+		return
+	}
+	configLen := len(GrayLogConfigArr) - 1
+	conf = GrayLogConfigArr[nextKey]
+	nextKey += 1
+	if nextKey >= configLen {
+		nextKey = 0
+	}
+	return
 }
 
 // SwitchToGraylog 转换到 Graylog 日志
@@ -43,8 +81,12 @@ func SwitchToGraylog(name string, optFunc func(ctx context.Context, m g.Map)) gl
 			in.Next(ctx)
 			return
 		}
+		config, err := GetConfig()
+		if err != nil {
+			fmt.Println("[记录日志出错]", err.Error())
+		}
 		// init server config to graylog
-		hook := graylog.NewGraylogHook(fmt.Sprintf("%s:%d", GrayLogConfig.Host, GrayLogConfig.Port), map[string]interface{}{})
+		hook := graylog.NewGraylogHook(fmt.Sprintf("%s:%d", config.Host, config.Port), map[string]interface{}{})
 		// get logger file path and code line
 		file, line := getCallerIgnoringLogMulti(5)
 		// get logger content message
@@ -64,7 +106,7 @@ func SwitchToGraylog(name string, optFunc func(ctx context.Context, m g.Map)) gl
 		}
 		optFunc(ctx, extra)
 		// writer logger
-		err := hook.Writer().WriteMessage(&graylog.Message{
+		err = hook.Writer().WriteMessage(&graylog.Message{
 			Version:  "1.1",
 			Host:     name,
 			Short:    string(short),
