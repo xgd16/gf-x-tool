@@ -1,12 +1,15 @@
 package xlib
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"github.com/gogf/gf/v2/container/garray"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
+	"github.com/gogf/gf/v2/frame/gins"
 	"github.com/gogf/gf/v2/os/gctx"
 	"os"
 	"os/signal"
@@ -95,4 +98,38 @@ func SelectOneToStruct[T any](one gdb.Record) *T {
 		panic("请检查 转换数据结构")
 	}
 	return d
+}
+
+// RedisScanData 扫描 redis 数据 (替代 keys 操作)
+func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err error)) (err error) {
+	conn, err := gins.Redis().Conn(ctx)
+	if err != nil {
+		return
+	}
+	defer func() { _ = conn.Close(ctx) }()
+	// scan 出 key 中所有的数据 -1 代表还没有执行一次操作
+	index := "0"
+	for {
+		items, err := conn.Do(ctx, "SCAN", index, "MATCH", key, "COUNT", 10)
+		if err != nil {
+			return err
+		}
+		if items.IsEmpty() {
+			break
+		}
+		scanData := items.Vars()
+		if len(scanData) < 2 {
+			return errors.New("scan data error")
+		}
+		index = scanData[0].String()
+		if index == "0" {
+			break
+		}
+		if len(scanData[1].Strings()) > 0 {
+			if err = fn(scanData[1].Strings()); err != nil {
+				return err
+			}
+		}
+	}
+	return
 }
