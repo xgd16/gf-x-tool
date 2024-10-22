@@ -46,6 +46,9 @@ func SetGrayLogConfig(config *gvar.Var) {
 	}
 	for k, v := range mapConfig {
 		item := v.MapStrVar()
+		if item["host"].IsEmpty() || item["port"].IsEmpty() {
+			continue
+		}
 		newConfig := &GrayLogConfigType{
 			Host: item["host"].String(),
 			Port: item["port"].Int(),
