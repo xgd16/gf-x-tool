@@ -3,18 +3,23 @@ package xlib
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
+	"time"
+
 	"github.com/gogf/gf/v2/container/garray"
 	"github.com/gogf/gf/v2/database/gdb"
 	"github.com/gogf/gf/v2/encoding/gjson"
 	"github.com/gogf/gf/v2/frame/g"
 	"github.com/gogf/gf/v2/frame/gins"
 	"github.com/gogf/gf/v2/os/gctx"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
+	"github.com/gogf/gf/v2/os/gfile"
 )
 
 // Sha256 获取数据的 sha256
@@ -132,4 +137,41 @@ func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err 
 		}
 	}
 	return
+}
+
+// Base642File Base64 转文件
+func Base642File(base64Str, filePath, filename string) (err error) {
+	suffix, err := GetFileExtension(base64Str)
+	if err != nil {
+		return
+	}
+	base64Data, err := GetBase64Data(base64Str)
+	if err != nil {
+		return
+	}
+	data, err := base64.StdEncoding.DecodeString(base64Data)
+	if err != nil {
+		return
+	}
+	err = gfile.PutBytes(fmt.Sprintf("%s/%s.%s", filePath, filename, suffix), data)
+	return
+}
+
+// GetFileExtension 获取文件后缀
+func GetFileExtension(base64Str string) (string, error) {
+	prefix := "data:image/"
+	suffixIndex := strings.Index(base64Str, ";base64,")
+	if suffixIndex == -1 {
+		return "", fmt.Errorf("无效的 Base64 字符串格式")
+	}
+	return base64Str[len(prefix):suffixIndex], nil
+}
+
+// GetBase64Data 获取 Base64 数据
+func GetBase64Data(base64Str string) (string, error) {
+	dataIndex := strings.Index(base64Str, ";base64,")
+	if dataIndex == -1 {
+		return "", fmt.Errorf("无效的 Base64 字符串格式")
+	}
+	return base64Str[dataIndex+len(";base64,"):], nil
 }
