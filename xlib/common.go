@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/gogf/gf/v2/database/gredis"
 	"os"
 	"os/signal"
 	"strings"
@@ -106,7 +107,7 @@ func SelectOneToStruct[T any](one gdb.Record) *T {
 }
 
 // RedisScanData 扫描 redis 数据 (替代 keys 操作)
-func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err error)) (err error) {
+func RedisScanData(ctx context.Context, key string, fn func(ctx context.Context, conn gredis.Conn, keys []string) (err error), count int) (err error) {
 	conn, err := gins.Redis().Conn(ctx)
 	if err != nil {
 		return
@@ -115,7 +116,7 @@ func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err 
 	// scan 出 key 中所有的数据 -1 代表还没有执行一次操作
 	index := "0"
 	for {
-		items, err := conn.Do(ctx, "SCAN", index, "MATCH", key, "COUNT", 10)
+		items, err := conn.Do(ctx, "SCAN", index, "MATCH", key, "COUNT", count)
 		if err != nil {
 			return err
 		}
@@ -129,9 +130,12 @@ func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err 
 		index = scanData[0].String()
 		arr := scanData[1].Strings()
 		if len(arr) > 0 {
-			if err = fn(arr); err != nil {
+			if err = fn(ctx, conn, arr); err != nil {
 				return err
 			}
+		}
+		if index == "0" {
+			break
 		}
 	}
 	return
