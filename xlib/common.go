@@ -127,11 +127,9 @@ func RedisScanData(ctx context.Context, key string, fn func(keys []string) (err 
 			return errors.New("scan data error")
 		}
 		index = scanData[0].String()
-		if index == "0" {
-			break
-		}
-		if len(scanData[1].Strings()) > 0 {
-			if err = fn(scanData[1].Strings()); err != nil {
+		arr := scanData[1].Strings()
+		if len(arr) > 0 {
+			if err = fn(arr); err != nil {
 				return err
 			}
 		}
